@@ -54,30 +54,29 @@ def main():
         detect_list = []
         img = cv2.imread(sys.argv[6])
         proposal = ss.selective_search_image(cfg.sigma, cfg.k, cfg.min_size, cfg.smallest, cfg.largest, cfg.distortion, img)
-        for region in proposal:
-            region_img = do.load_region_image(sys.argv[6], region.rect.left, region.rect.top, region.rect.right, region.rect.bottom)
-            
-            feed_dict = {image:region_img}
-            region_prob, region_bbox = sess.run([alexnet_model.finetune_fc8, alexnet_model.finetune_bbox1], feed_dict=feed_dict)
 
-            label = np.argmax(region_prob[0])
+        feed_dict = {image:img, bbox_holder:proposal}
+        region_prob, region_bbox = sess.run([alexnet_model.finetune_fc8, alexnet_model.finetune_bbox1], feed_dict=feed_dict)
+
+        for i in range(len(region_prob)):
+            label = np.argmax(region_prob[i])
             if label != cfg.object_class_num:
                 region_width = region.rect.right - region.rect.left
                 region_hegith = region.rect.bottom - region.rect.top
                 region_center_x = region.rect.left + region_width / 2
                 region_center_y = region.rect.top + region_hegith / 2
 
-                bbox_center_x = region_width * region_bbox[0][0] + region_center_x
-                bbox_center_y = region_hegith * region_bbox[0][1] + region_center_y
-                bbox_width = region_width * np.exp(region_bbox[0][2])
-                bbox_height = region_hegith * np.exp(region_bbox[0][3])
+                bbox_center_x = region_width * region_bbox[i][0] + region_center_x
+                bbox_center_y = region_hegith * region_bbox[i][1] + region_center_y
+                bbox_width = region_width * np.exp(region_bbox[i][2])
+                bbox_height = region_hegith * np.exp(region_bbox[i][3])
 
                 bbox_left = bbox_center_x - bbox_width / 2
                 bbox_top = bbox_center_y - bbox_height / 2
                 bbox_right = bbox_center_x + bbox_width / 2
                 bbox_bottom = bbox_center_y + bbox_height / 2
 
-                detect_list.append((label, region_prob[0][label], bbox_left, bbox_top, bbox_right, bbox_bottom))
+                detect_list.append((label, region_prob[i][label], bbox_left, bbox_top, bbox_right, bbox_bottom))
 
         nms_detect_list = []
         for i in range(len(detect_list)):
