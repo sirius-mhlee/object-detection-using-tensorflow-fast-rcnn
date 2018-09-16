@@ -41,42 +41,55 @@ def generate_image(label_file_path, img, nms_detect_list):
 def main():
     with tf.Session() as sess:
         image = tf.placeholder(tf.float32, [1, cfg.image_size_width, cfg.image_size_height, 3])
+        bbox = tf.placeholder(tf.float32, [None, 5])
 
         model = do.load_model(sys.argv[1])
         mean = do.load_mean(sys.argv[2])
         alexnet_model = an.AlexNet(model, mean, False)
         with tf.name_scope('alexnet_content'):
             alexnet_model.build(image)
-            alexnet_model.build_finetune()
+        with tf.name_scope('alexnet_finetune_content'):
+            alexnet_model.build_finetune(bbox)
 
         sess.run(tf.global_variables_initializer())
 
-        detect_list = []
-        img = cv2.imread(sys.argv[6])
-        proposal = ss.selective_search_image(cfg.sigma, cfg.k, cfg.min_size, cfg.smallest, cfg.largest, cfg.distortion, img)
+        expand_np_img, width, height = do.load_image(sys.argv[4])
+        region_list = []
 
-        feed_dict = {image:img, bbox_holder:proposal}
+        region_scale_width = cfg.image_size_width / width
+        region_scale_height = cfg.image_size_height / height
+
+        img = cv2.imread(sys.argv[4])
+        proposal = ss.selective_search_image(cfg.sigma, cfg.k, cfg.min_size, cfg.smallest, cfg.largest, cfg.distortion, img)
+        for region in proposal:
+            region_list.append((0, region.rect.top * region_scale_height, region.rect.left * region_scale_width, region.rect.bottom * region_scale_height, region.rect.right * region_scale_width))
+        convert_tensor_region_op = tf.convert_to_tensor(region_list, dtype=tf.float32)
+        convert_tensor_region = sess.run(convert_tensor_region_op)
+
+        feed_dict = {image:expand_np_img, bbox:convert_tensor_region}
         region_prob, region_bbox = sess.run([alexnet_model.finetune_fc8, alexnet_model.finetune_bbox1], feed_dict=feed_dict)
 
+        detect_list = []
         for i in range(len(region_prob)):
             label = np.argmax(region_prob[i])
             if label != cfg.object_class_num:
+                region = proposal[i]
                 region_width = region.rect.right - region.rect.left
                 region_hegith = region.rect.bottom - region.rect.top
                 region_center_x = region.rect.left + region_width / 2
                 region_center_y = region.rect.top + region_hegith / 2
 
-                bbox_center_x = region_width * region_bbox[i][0] + region_center_x
-                bbox_center_y = region_hegith * region_bbox[i][1] + region_center_y
-                bbox_width = region_width * np.exp(region_bbox[i][2])
-                bbox_height = region_hegith * np.exp(region_bbox[i][3])
+                bbox_center_x = region_width * region_bbox[i][(label * 4) + 0] + region_center_x
+                bbox_center_y = region_hegith * region_bbox[i][(label * 4) + 1] + region_center_y
+                bbox_width = region_width * np.exp(region_bbox[i][(label * 4) + 2])
+                bbox_height = region_hegith * np.exp(region_bbox[i][(label * 4) + 3])
 
                 bbox_left = bbox_center_x - bbox_width / 2
                 bbox_top = bbox_center_y - bbox_height / 2
                 bbox_right = bbox_center_x + bbox_width / 2
                 bbox_bottom = bbox_center_y + bbox_height / 2
 
-                detect_list.append((label, region_prob[i][label], bbox_left, bbox_top, bbox_right, bbox_bottom))
+                detect_list.append((label, region_prob[i][label], bbox_left / region_scale_width, bbox_top / region_scale_height, bbox_right / region_scale_width, bbox_bottom / region_scale_height))
 
         nms_detect_list = []
         for i in range(len(detect_list)):
@@ -94,8 +107,8 @@ def main():
             if not check_suppression:
                 nms_detect_list.append(detect_list[i])
 
-        save_img = generate_image(sys.argv[5], img, nms_detect_list)
-        cv2.imwrite(sys.argv[7], save_img)
+        save_img = generate_image(sys.argv[3], img, nms_detect_list)
+        cv2.imwrite(sys.argv[5], save_img)
 
 if __name__ == '__main__':
     main()

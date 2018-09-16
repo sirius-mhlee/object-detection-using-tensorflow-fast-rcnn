@@ -31,6 +31,7 @@ def main():
         image = tf.placeholder(tf.float32, [None, cfg.image_size_width, cfg.image_size_height, 3])
         label = tf.placeholder(tf.float32, [None, cfg.object_class_num])
         bbox = tf.placeholder(tf.float32, [None, 5])
+        bbox_slice_idx = tf.placeholder(tf.int32, [None, 2])
         finetune_label = tf.placeholder(tf.float32, [None, cfg.object_class_num + 1])
 
         alexnet_model = an.AlexNet(None, alexnet_train_mean, True)
@@ -61,14 +62,14 @@ def main():
         print('Finetuning AlexNet')
         for epoch_idx in range(max_epoch):
             for batch_idx in range(alexnet_finetune_size // batch_size):
-                batch_image, batch_bbox, batch_label = do.get_alexnet_finetune_batch_data(sess, alexnet_finetune_data, batch_size)
-                feed_dict = {image:batch_image, finetune_label:batch_label}
+                batch_image, batch_bbox, batch_bbox_slice_idx, batch_label = do.get_alexnet_finetune_batch_data(sess, alexnet_finetune_data, batch_size)
+                feed_dict = {image:batch_image, bbox:batch_bbox, bbox_slice_idx:batch_bbox_slice_idx, finetune_label:batch_label}
 
                 _, loss_mean_value = sess.run([alexnet_model.finetune_optimizer, alexnet_model.finetune_loss_mean], feed_dict=feed_dict)
                 print_batch_info(epoch_idx, batch_idx, loss_mean_value)
 
-            batch_image, batch_label = do.get_alexnet_finetune_batch_data(sess, alexnet_finetune_data, batch_size)
-            feed_dict = {image:batch_image, finetune_label:batch_label}
+            batch_image, batch_bbox, batch_bbox_slice_idx, batch_label = do.get_alexnet_finetune_batch_data(sess, alexnet_finetune_data, batch_size)
+            feed_dict = {image:batch_image, bbox:batch_bbox, bbox_slice_idx:batch_bbox_slice_idx, finetune_label:batch_label}
 
             accuracy_mean_value = sess.run(alexnet_model.finetune_accuracy_mean, feed_dict=feed_dict)
             print_epoch_info(epoch_idx, accuracy_mean_value)
