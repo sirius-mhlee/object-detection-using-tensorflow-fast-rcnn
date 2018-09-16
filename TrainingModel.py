@@ -38,7 +38,7 @@ def main():
         with tf.name_scope('alexnet_content'):
             alexnet_model.build(image, label)
         with tf.name_scope('alexnet_finetune_content'):
-            alexnet_model.build_finetune(bbox, finetune_label)
+            alexnet_model.build_finetune(bbox, bbox_slice_idx, finetune_label)
 
         writer = tf.summary.FileWriter('./log/', sess.graph)
 
