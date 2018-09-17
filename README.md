@@ -13,11 +13,11 @@ http://www.robots.ox.ac.uk/~vgg/data/flowers/17/
 Training Usage
 -----
 
-    python TrainingModel.py train_data_file finetune_data_file max_epoch batch_size
+    python TrainingModel.py train_data_file finetune_data_file
     	output_cnn_model_file output_cnn_mean_file
     
     ex)
-    python TrainingModel.py ./data/train_data.txt ./data/finetune_data.txt 3 3
+    python TrainingModel.py ./data/train_data.txt ./data/finetune_data.txt
     	./alexnet/alexnet_model.npy ./alexnet/alexnet_mean.txt
 
 Training Result
