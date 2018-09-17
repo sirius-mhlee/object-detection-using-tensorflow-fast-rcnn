@@ -143,25 +143,15 @@ def get_alexnet_finetune_batch_data(sess, train_data, batch_size):
         region_scale_height = cfg.image_size_height / height
 
         for value_idx, data_value in enumerate(batch_data_value):
-            data_value[1] *= region_scale_width
-            data_value[2] *= region_scale_height
-            data_value[3] *= region_scale_width
-            data_value[4] *= region_scale_height
+            region_width = (data_value[7] * region_scale_width) - (data_value[5] * region_scale_width)
+            region_hegith = (data_value[8] * region_scale_height) - (data_value[6] * region_scale_height)
+            region_center_x = (data_value[5] * region_scale_width) + region_width / 2
+            region_center_y = (data_value[6] * region_scale_height) + region_hegith / 2
 
-            data_value[5] *= region_scale_width
-            data_value[6] *= region_scale_height
-            data_value[7] *= region_scale_width
-            data_value[8] *= region_scale_height
-
-            region_width = data_value[7] - data_value[5]
-            region_hegith = data_value[8] - data_value[6]
-            region_center_x = data_value[5] + region_width / 2
-            region_center_y = data_value[6] + region_hegith / 2
-
-            ground_truth_width = data_value[3] - data_value[1]
-            ground_truth_height = data_value[4] - data_value[2]
-            ground_truth_center_x = data_value[1] + ground_truth_width / 2
-            ground_truth_center_y = data_value[2] + ground_truth_height / 2
+            ground_truth_width = (data_value[3] * region_scale_width) - (data_value[1] * region_scale_width)
+            ground_truth_height = (data_value[4] * region_scale_height) - (data_value[2] * region_scale_height)
+            ground_truth_center_x = (data_value[1] * region_scale_width) + ground_truth_width / 2
+            ground_truth_center_y = (data_value[2] * region_scale_height) + ground_truth_height / 2
 
             target_x = (ground_truth_center_x - region_center_x) / region_width
             target_y = (ground_truth_center_y - region_center_y) / region_hegith

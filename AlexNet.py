@@ -77,19 +77,19 @@ class AlexNet:
         
         if self.trainable:
             self.finetune_cls_loss = tf.nn.softmax_cross_entropy_with_logits(logits=self.finetune_fc8, labels=label_holder)
-            self.finetune_cls_loss_sum = tf.reduce_sum(self.finetune_cls_loss, 0)
+            self.finetune_cls_loss_sum = tf.reshape(self.finetune_cls_loss, [-1, 1])
 
             box_rect = box_holder[:, 5:9]
-            reshape_finetune_bbox = tf.reshape(self.finetune_bbox1, (box_holder[:, 0].shape[0], -1, 4))
+            reshape_finetune_bbox = tf.reshape(self.finetune_bbox1, [cfg.batch_size * cfg.region_per_batch, -1, 4])
             slice_finetune_bbox = tf.gather_nd(reshape_finetune_bbox, box_slice_idx_holder)
 
             self.finetune_bbox_loss = tf.square(box_rect - slice_finetune_bbox)
-            self.finetune_bbox_loss_sum = tf.reduce_sum(self.finetune_bbox_loss, 0)
+            self.finetune_bbox_loss_sum = tf.reduce_sum(self.finetune_bbox_loss, 1, keep_dims=True)
 
             valid_bbox_bool = tf.not_equal(tf.cast(cfg.object_class_num, tf.int64), tf.argmax(label_holder, 1))
-            valid_bbox = tf.cast(valid_bbox_bool, tf.float32)
+            valid_bbox = tf.reshape(tf.cast(valid_bbox_bool, tf.float32), [-1, 1])
 
-            self.finetune_loss = finetune_cls_loss_sum + 1 * valid_bbox * finetune_bbox_loss_sum
+            self.finetune_loss = self.finetune_cls_loss_sum + 1 * valid_bbox * self.finetune_bbox_loss_sum
             self.finetune_loss_mean = tf.reduce_mean(self.finetune_loss)
             self.finetune_optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.0001).minimize(self.finetune_loss_mean)
 
@@ -156,7 +156,7 @@ class AlexNet:
 
     def roi_pool(self, bottom, box_holder, crop_size, name):
         box_rect = box_holder[:, 1:5] / [cfg.image_size_height, cfg.image_size_width, cfg.image_size_height, cfg.image_size_width]
-        box_batch_idx = box_holder[:, 0]
+        box_batch_idx = tf.cast(box_holder[:, 0], tf.int32)
         return tf.image.crop_and_resize(bottom, box_rect, box_batch_idx, [crop_size, crop_size], name=name)
 
     def get_var_count(self):
