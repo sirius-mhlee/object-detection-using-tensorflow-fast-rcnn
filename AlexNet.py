@@ -83,7 +83,7 @@ class AlexNet:
             reshape_finetune_bbox = tf.reshape(self.finetune_bbox1, [cfg.batch_size * cfg.region_per_batch, -1, 4])
             slice_finetune_bbox = tf.gather_nd(reshape_finetune_bbox, box_slice_idx_holder)
 
-            self.finetune_bbox_loss = tf.square(box_rect - slice_finetune_bbox)
+            self.finetune_bbox_loss = 0.5 * tf.square(box_rect - slice_finetune_bbox)
             self.finetune_bbox_loss_sum = tf.reduce_sum(self.finetune_bbox_loss, 1, keep_dims=True)
 
             valid_bbox_bool = tf.not_equal(tf.cast(cfg.object_class_num, tf.int64), tf.argmax(label_holder, 1))
@@ -91,7 +91,7 @@ class AlexNet:
 
             self.finetune_loss = self.finetune_cls_loss_sum + 1 * valid_bbox * self.finetune_bbox_loss_sum
             self.finetune_loss_mean = tf.reduce_mean(self.finetune_loss)
-            self.finetune_optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.0001).minimize(self.finetune_loss_mean)
+            self.finetune_optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.0000015).minimize(self.finetune_loss_mean)
 
             self.finetune_correct_prediction = tf.equal(tf.argmax(self.finetune_fc8, 1), tf.argmax(label_holder, 1))
             self.finetune_accuracy_mean = tf.reduce_mean(tf.cast(self.finetune_correct_prediction, tf.float32))

@@ -74,10 +74,10 @@ def main():
             label = np.argmax(region_prob[i])
             if label != cfg.object_class_num:
                 region = proposal[i]
-                region_width = region.rect.right - region.rect.left
-                region_hegith = region.rect.bottom - region.rect.top
-                region_center_x = region.rect.left + region_width / 2
-                region_center_y = region.rect.top + region_hegith / 2
+                region_width = (region.rect.right * region_scale_width) - (region.rect.left * region_scale_width)
+                region_hegith = (region.rect.bottom * region_scale_height) - (region.rect.top * region_scale_height)
+                region_center_x = (region.rect.left * region_scale_width) + region_width / 2
+                region_center_y = (region.rect.top * region_scale_height) + region_hegith / 2
 
                 bbox_center_x = region_width * region_bbox[i][(label * 4) + 0] + region_center_x
                 bbox_center_y = region_hegith * region_bbox[i][(label * 4) + 1] + region_center_y
@@ -91,6 +91,8 @@ def main():
 
                 detect_list.append((label, region_prob[i][label], bbox_left / region_scale_width, bbox_top / region_scale_height, bbox_right / region_scale_width, bbox_bottom / region_scale_height))
 
+        print(region_prob)#
+        print(detect_list)#
         nms_detect_list = []
         for i in range(len(detect_list)):
             check_suppression = False

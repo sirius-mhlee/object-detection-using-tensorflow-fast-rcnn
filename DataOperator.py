@@ -158,7 +158,7 @@ def get_alexnet_finetune_batch_data(sess, train_data, batch_size):
             target_width = np.log(ground_truth_width / region_width)
             target_height = np.log(ground_truth_height / region_hegith)
 
-            bbox.append((key_idx, data_value[6], data_value[5], data_value[8], data_value[7], target_x, target_y, target_width, target_height))
+            bbox.append((key_idx, data_value[6] * region_scale_height, data_value[5] * region_scale_width, data_value[8] * region_scale_height, data_value[7] * region_scale_width, target_x, target_y, target_width, target_height))
 
             bbox_slice_idx_label = data_value[0]
             if bbox_slice_idx_label == cfg.object_class_num:
