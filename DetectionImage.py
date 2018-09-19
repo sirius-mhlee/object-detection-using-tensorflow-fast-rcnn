@@ -91,8 +91,6 @@ def main():
 
                 detect_list.append((label, region_prob[i][label], bbox_left / region_scale_width, bbox_top / region_scale_height, bbox_right / region_scale_width, bbox_bottom / region_scale_height))
 
-        print(region_prob)#
-        print(detect_list)#
         nms_detect_list = []
         for i in range(len(detect_list)):
             check_suppression = False
@@ -104,7 +102,7 @@ def main():
                     if iou > 0.3:
                         if detect_list[j][1] > detect_list[i][1]:
                             check_suppression = True
-                            break;
+                            break
 
             if not check_suppression:
                 nms_detect_list.append(detect_list[i])

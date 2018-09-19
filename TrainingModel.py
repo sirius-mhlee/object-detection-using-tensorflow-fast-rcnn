@@ -42,7 +42,7 @@ def main():
         sess.run(tf.global_variables_initializer())
 
         print('Training AlexNet')
-        for epoch_idx in range(cfg.max_epoch):
+        for epoch_idx in range(cfg.training_max_epoch):
             for batch_idx in range(alexnet_train_size // cfg.batch_size):
                 batch_image, batch_label = do.get_alexnet_train_batch_data(sess, alexnet_train_data, cfg.batch_size)
                 feed_dict = {image:batch_image, label:batch_label}
@@ -57,7 +57,7 @@ def main():
             print_epoch_info(epoch_idx, accuracy_mean_value)
 
         print('Finetuning AlexNet')
-        for epoch_idx in range(cfg.max_epoch):
+        for epoch_idx in range(cfg.finetuning_max_epoch):
             for batch_idx in range(alexnet_finetune_size // cfg.batch_size):
                 batch_image, batch_bbox, batch_bbox_slice_idx, batch_label = do.get_alexnet_finetune_batch_data(sess, alexnet_finetune_data, cfg.batch_size)
                 feed_dict = {image:batch_image, bbox:batch_bbox, bbox_slice_idx:batch_bbox_slice_idx, finetune_label:batch_label}
